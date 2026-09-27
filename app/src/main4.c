@@ -60,9 +60,6 @@ static int total_events;
 static int total_wakeups;
 static int total_processed;
 
-/* TASK 3: timestamp of previous handler run, to measure spacing */
-static uint32_t last_handler_tick;
-
 /* ------------------------------------------------------------------ */
 /*  polling_thread - checks flag every 10ms                          */
 /*                                                                     */
@@ -82,18 +79,8 @@ static void sensor_handler(struct k_work *work)
      * This is the "real work". In Task 2 this goes into
      * the k_work handler body.
      */
-    /*
-     * TASK 3: log k_uptime_get_32() plus the delta since the previous
-     * handler run. Delta should be ~SENSOR_MS (100ms): the handler
-     * runs only when sensor_sim fires - no unnecessary wake-ups.
-     */
-    uint32_t now = k_uptime_get_32();
-    uint32_t delta = (last_handler_tick != 0U) ? (now - last_handler_tick) : 0U;
-
-    last_handler_tick = now;
-
-    LOG_INF("[HANDLER] processed event %d  tick=%u  delta=%u ms",
-            total_processed, now, delta);
+    LOG_INF("[HANDLER] processed event %d  tick=%u",
+            total_processed, k_uptime_get_32());
 
     /* Summary after all events processed */
     if (total_processed == EVENT_COUNT) {
@@ -177,8 +164,8 @@ K_THREAD_DEFINE(sensor_thread,  STACK_SIZE, sensor_sim_fn, NULL, NULL, NULL, 5, 
 int main(void)
 {
     LOG_INF("=== L3 Homework: Polling to Workqueue ===");
-    LOG_INF("Task 3: sensor fires every %dms, handler delta should be ~%dms",
-            SENSOR_MS, SENSOR_MS);
+    LOG_INF("Task 2: sensor fires every %dms, handled via k_work_submit",
+            SENSOR_MS);
 
     /* Wait long enough for all events to complete */
     k_msleep((EVENT_COUNT + 2) * SENSOR_MS + 500);
